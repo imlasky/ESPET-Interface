@@ -16,7 +16,7 @@ data editing and faster accessing. The work flow is below:
 
 Below is a simple toy example:
 
-'''
+```python
 my_emitter = Emitter.Emitter()
 my_emitter.create_connection()
 my_emitter.login('username', 'password')
@@ -24,7 +24,7 @@ my_emitter.select_props()
 my_emitter.upload_data_individual()
 my_emitter.run_sim()
 my_emitter.save_sim()
-'''
+```
 
 ### In progress
 Currently, the only way to upload data using this class is one by one through the available
