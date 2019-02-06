@@ -10,6 +10,10 @@ from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui  import Select
 from selenium.common.exceptions import InvalidElementStateException
+from selenium.common.exceptions import StaleElementReferenceException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
 
 class Emitter(object):
     """Emitter object capable of automatically running ESPET website"""
@@ -106,6 +110,13 @@ class Emitter(object):
         try:
             self.__get_fields()
         except:
+
+            self.__sub_select()
+            self.scrape_fields()
+            self.save_fields()
+
+    def __sub_select(self):
+
             emitter_select = Select(self.driver.find_element_by_name('emitter'))
             emitter_select.select_by_value(self._emitter)
 
@@ -114,8 +125,6 @@ class Emitter(object):
 
             independent_variable_select = Select(self.driver.find_element_by_name('independentVariable'))
             independent_variable_select.select_by_value(self._independent_variable)
-            self.scrape_fields()
-            self.save_fields()
 
     def __get_fields(self):
         """Upload dictionary of fields given emitter and feed combination"""
@@ -137,6 +146,7 @@ class Emitter(object):
             self._input_fields['substrate_feed'] = self.feed_substrate
             self._input_fields['independentVariable'] = self.independent_variable
             self._input_fields['field'] = self.field
+            self.__sub_select()
 
         except FileNotFoundError:
             raise FileNotFoundError('Could not find input fields file.')
@@ -187,22 +197,29 @@ class Emitter(object):
         """Upload the data field by field"""
 
         ind_var = self.driver.find_element_by_name('independentVariable')
+        ind_var_select = Select(ind_var)
         for key, val in self._input_fields.items():
             temp = self.driver.find_element_by_name(key)
-            if key not in ['emitter', 'feed', 'propellant', 'substrate_emitter',
+            if key in ['Seed_Feed', 'Seed_Emitter']:
+                continue
+            elif key not in ['emitter', 'feed', 'propellant', 'substrate_emitter',
                     'substrate_feed', 'field', 'independentVariable']:
-                i = 0
                 if temp.get_attribute('readonly'):
-                    while temp.get_attribute('readonly'):
-                        Select(ind_var).select_by_index(i % 3)
-                        i  = (i + 1) % 3
+                    for var in self.__independent_variables:
+                        ind_var_select.select_by_value(var)
+                        try:
+                            temp.clear()
+                            temp.send_keys(val)
+                            break
+                        except:
+                            pass
+
                 temp.clear()
                 temp.send_keys(val)
 
             else:
                 Select(temp).select_by_value(val)
 
-        Select(ind_var).select_by_value(self.independent_variable)
 
     def upload_data_group(self):
         """Upload data using the upload config function on ESPET"""
