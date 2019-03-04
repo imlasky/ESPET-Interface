@@ -2,6 +2,7 @@ import os
 import time
 import json
 import pickle
+import pyautogui
 import numpy as np
 import pandas as pd
 import pyperclip as pc
@@ -95,6 +96,12 @@ class Emitter(object):
 
         self.driver = webdriver.Chrome(ChromeDriverManager().install(),
                 chrome_options=chrome_options)
+
+        self.get_espet()
+
+    def get_espet(self):
+        """Go to ESPET website"""
+
         self.driver.get('http://espet.spectral.com/espet/qsolver/')
 
     def login(self, username, password):
@@ -138,6 +145,11 @@ class Emitter(object):
                     '.pickle')
             with open(fname, 'rb') as f:
                 self._input_fields = pickle.load(f)
+                if 'Seed_Feed' not in self._input_fields:
+                    self._input_fields['Seed_Feed'] = 1
+                if 'Seed_Emitter' not in self._input_fields:
+                    self._input_fields['Seed_Emitter'] = 1
+
 
             self._input_fields['emitter'] = self.emitter
             self._input_fields['feed'] = self.feed
@@ -146,7 +158,6 @@ class Emitter(object):
             self._input_fields['substrate_feed'] = self.feed_substrate
             self._input_fields['independentVariable'] = self.independent_variable
             self._input_fields['field'] = self.field
-            self.__sub_select()
 
         except FileNotFoundError:
             raise FileNotFoundError('Could not find input fields file.')
@@ -196,6 +207,7 @@ class Emitter(object):
     def upload_data_individual(self):
         """Upload the data field by field"""
 
+        self.__sub_select()
         ind_var = self.driver.find_element_by_name('independentVariable')
         ind_var_select = Select(ind_var)
         for key, val in self._input_fields.items():
@@ -209,13 +221,13 @@ class Emitter(object):
                         ind_var_select.select_by_value(var)
                         try:
                             temp.clear()
-                            temp.send_keys(val)
+                            temp.send_keys(str(val))
                             break
                         except:
                             pass
 
                 temp.clear()
-                temp.send_keys(val)
+                temp.send_keys(str(val))
 
             else:
                 Select(temp).select_by_value(val)
@@ -252,6 +264,11 @@ class Emitter(object):
         self.sim_data= pd.read_csv(s)
         #time.sleep(0.05)
         #os.remove(s)
+
+    def new_tab(self):
+        """Create new tab in chrome"""
+
+        pyautogui.hotkey('ctrl', 't')
 
     @property
     def emitter(self):
@@ -343,3 +360,4 @@ class Emitter(object):
             self._field= self.__fields[value]
         else:
             raise TypeError('Field type must be string or int.')
+
